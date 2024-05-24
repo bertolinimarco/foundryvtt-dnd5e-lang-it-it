@@ -19,9 +19,7 @@
     }
   ],
   "esmodules": ["babele-register.js"],
-  "scripts": [],
   "styles": ["./style.css"],
-  "packs": [],
 
   "languages": [
     {
