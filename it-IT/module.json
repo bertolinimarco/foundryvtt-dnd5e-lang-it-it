@@ -24,14 +24,12 @@
       "type": "module"
     }
   ],
-  "esmodules": ["babele-register.js"],
-  "styles": ["./style.css"],
 
   "languages": [
     {
       "lang": "it",
       "name": "Italian",
-      "path": "/it-IT/it.json"
+      "path": "it.json"
     }
   ],
   "url": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it",
