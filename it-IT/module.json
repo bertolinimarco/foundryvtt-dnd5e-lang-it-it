@@ -12,14 +12,12 @@
     "minimum": "10",
     "verified": "12"
   },
-
   "dependencies": [
     {
       "name": "babele",
       "type": "module"
     }
   ],
-
   "esmodules": ["babele-register.js"],
   "scripts": [],
   "styles": ["./style.css"],
@@ -32,7 +30,6 @@
       "path": "it.json"
     }
   ],
-
   "url": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it",
   "manifest": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it/raw/master/it-IT/module.json",
   "download": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it/archive/master.zip"
