@@ -1,8 +1,8 @@
 {
   "name": "translation-dnd5e-it",
   "title": "DnD5e Italian Translation",
-  "description": "Add Italian language to dnd5e system for FoundryVTT.",
-  "version": "0.50",
+  "description": "TEST",
+  "version": "2",
   "minimumCoreVersion" : "9",
   "compatibleCoreVersion":"9",
 
@@ -16,7 +16,7 @@
     "type": "module"
   }],
 
-  "author": "ariakas81, Simone, MrDaerlic, ciuei, DMage, Floppy, heirold, Elia.Hard",
+  "author": "bertolinimarco",
   "esmodules": ["babele-register.js"],
   "scripts": [],
   "styles": [
