@@ -4,7 +4,6 @@
   "description": "Traduzione italiana per il sistema DnD5e",
 
   "version": "2.0.0",
-  "minimumCoreVersion": "10.291",
   "compatibleCoreVersion": 12,
   "compatibility": {
     "minimum": 10,
@@ -18,12 +17,14 @@
 
   "socket": true,
 
-  "dependencies": [
-    {
-      "name": "babele",
-      "type": "module"
-    }
-  ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "babele",
+        "type": "module"
+      }
+    ]
+  },
   "esmodules": ["babele-register.js"],
   "styles": ["./style.css"],
 
