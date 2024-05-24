@@ -35,6 +35,6 @@
     }
   ],
   "url": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it",
-  "manifest": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it/blob/main/it-IT/module.json",
+  "manifest": "https://raw.githubusercontent.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it/main/it-IT/module.json",
   "download": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it/archive/master.zip"
 }
