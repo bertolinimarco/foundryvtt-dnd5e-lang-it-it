@@ -3,32 +3,32 @@
   "title": "DnD5e Italian Translation",
   "description": "TEST",
   "version": "2",
-  "minimumCoreVersion" : "9",
-  "compatibleCoreVersion":"9",
+  "minimumCoreVersion": "9",
+  "compatibleCoreVersion": "9",
 
-  "systems": [
-    "dnd5e"
-  ],
+  "systems": ["dnd5e"],
   "minimumSystemVersion": "1.6.0",
 
-  "dependencies": [{
-    "name": "babele",
-    "type": "module"
-  }],
+  "dependencies": [
+    {
+      "name": "babele",
+      "type": "module"
+    }
+  ],
 
   "author": "bertolinimarco",
   "esmodules": ["babele-register.js"],
   "scripts": [],
-  "styles": [
-    "./style.css"
-  ],
+  "styles": ["./style.css"],
   "packs": [],
 
-  "languages": [{
-  	"lang": "it",
-    "name": "Italian",
-    "path": "it.json"
-  }],
+  "languages": [
+    {
+      "lang": "it",
+      "name": "Italian",
+      "path": "it.json"
+    }
+  ],
 
   "url": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it",
   "manifest": "https://github.com/bertolinimarco/foundryvtt-dnd5e-lang-it-it/raw/master/it-IT/module.json",
