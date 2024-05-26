@@ -3,7 +3,7 @@
   "title": "DnD5e Italian Translation (Fork)",
   "description": "Fork della traduzione italiana per il sistema DnD5e",
 
-  "version": "0.0.3a",
+  "version": "0.0.3b",
   "compatibility": {
     "minimum": 10,
     "verified": 12
