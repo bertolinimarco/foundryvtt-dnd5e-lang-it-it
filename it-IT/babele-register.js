@@ -171,7 +171,7 @@ var classes = {
   "Life Domain": "Dominio della Vita",
   "Circle of the Land": "Circolo della Terra",
   "The Fiend": "Patrono Immondo",
-  Hunter: "Cacciatore",
+  "Hunter": "Cacciatore",
   "School of Evocation": "Scuola di Evocazione",
   "Path of the Berserker": "Percorso del Berserker",
   "Eldritch Blast": "Deflagrazione Occulta",
@@ -188,10 +188,89 @@ var rarity = {
   "Very rare": "Molto Raro",
   "Legendary": "Leggendario",
 };
-Hooks.once('init', () => {
 
-	if (typeof Babele !== 'undefined') {
+function round(num) {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
 
+function lbToKg(lb) {
+  if (!lb) {
+    return lb;
+  }
+  return parseInt(lb) / 2;
+}
+
+function footsToMeters(ft) {
+  if (!ft) {
+    return ft;
+  }
+  return round(parseInt(ft) * 0.3);
+}
+
+function milesToMeters(mi) {
+  if (!mi) {
+    return mi;
+  }
+  return round(parseInt(mi) * 1.5);
+}
+
+function parseSenses(sensesText) {
+  const senses = sensesText.split(". ");
+  let parsed = "";
+  senses.forEach((sense) => {
+    parsed = parseSense(sense) + " " + parsed;
+  });
+  return parsed;
+}
+
+function parseSense(sense) {
+  var regexp = /([0-9]+)/gi;
+  sense = sense.replace(/ft/gi, "m");
+  sense = sense.replace(/feet/gi, "m");
+  sense = sense.replace(/Darkvision/gi, "Scurovisione");
+  sense = sense.replace(/Darvision/gi, "Scurovisione"); //bug ^^
+  sense = sense.replace(/Blindsight/gi, "Vista cieca");
+  sense = sense.replace(/Truesight/gi, "Vista pura");
+  sense = sense.replace(/tremorsense/gi, "Percezione tellurica");
+  sense = sense.replace(/Blind Beyond/gi, "Cieco oltre");
+  sense = sense.replace(/this radius/gi, "questo raggio");
+  sense = sense.replace(
+    sense.match(regexp),
+    footsToMeters(sense.match(regexp))
+  );
+  sense = sense.replace(
+    "(blind beyond this radius)",
+    "(cieco oltre questo raggio)"
+  );
+  return sense;
+}
+
+function parseDamage(damage) {
+  damage = damage.replace(/bludgeoning/gi, "contundenti");
+  damage = damage.replace(/piercing/gi, "perforanti");
+  damage = damage.replace(/and/gi, "e");
+  damage = damage.replace(/slashing/gi, "taglienti");
+  damage = damage.replace(/from/gi, "da");
+  damage = damage.replace(/nonmagical attacks/gi, "attacchi non magici");
+  damage = damage.replace(/that aren't silvered/gi, "che non sono d'argento");
+  damage = damage.replace(
+    /not made with silvered weapons/gi,
+    "non fatti con armi d'argento"
+  );
+  return damage;
+}
+
+function convertEnabled() {
+  return game.settings.get("translation-dnd5e-it", "convert");
+}
+
+function setEncumbranceData() {
+  let convert = convertEnabled();
+  game.settings.set("dnd5e", "metricWeightUnits", convert);
+}
+
+Hooks.once("init", () => {
+  if (typeof Babele !== "undefined") {
     game.settings.register("translation-dnd5e-it", "convert", {
       name: "Conversione Automatica",
       hint: "Applica automaticamente la conversione da sistema imperiale a sistema metrico",
@@ -210,579 +289,226 @@ Hooks.once('init', () => {
       dir: "compendium",
     });
 
-		Babele.get().registerConverters({
-			"pages": Converters.pages(),
-			"weight": Converters.weight(),
-			"range": Converters.range(),
-			"sightRange": Converters.sightRange(),
-			"alignement": Converters.alignment(),
-			"movement": Converters.movement(),
-			"senses": Converters.senses(),
-			"di": Converters.damage(),
-			"languages": Converters.languages(),
-			"token": Converters.token(),
-			"race": Converters.race(),
-			"rarity": Converters.rarity(),
-			"raceRequirements": Converters.raceRequirements(),
-			"classRequirements": Converters.classRequirements(),
-			"source": Converters.source(),
-			"type": Converters.type(),
-			"adv_sizehint": Converters.advsizehint(),
-			"advancement" : Converters.advancement()
-		});
-	}
+    Babele.get().registerConverters({
+      weight: (value) => {
+        if (!convertEnabled()) {
+          return value;
+        }
+        return lbToKg(value);
+      },
+      range: (range) => {
+        if (range) {
+          if (!convertEnabled()) {
+            return range;
+          }
+          if (range.units === "ft") {
+            return mergeObject(range, {
+              value: footsToMeters(range.value),
+              long: footsToMeters(range.long),
+              units: "m",
+            });
+          }
+          if (range.units === "mi") {
+            return mergeObject(range, {
+              value: milesToMeters(range.value),
+              long: milesToMeters(range.long),
+              units: "km",
+            });
+          }
+          return range;
+        }
+      },
+      alignement: (alignment) => {
+        return alignments[alignment.toLowerCase()];
+      },
+      movement: (movement) => {
+        if (!convertEnabled()) {
+          return movement;
+        }
+
+        let convert = (value) => {
+          return value;
+        };
+        let units = movement.units;
+        if (units === "ft") {
+          convert = (value) => {
+            return footsToMeters(value);
+          };
+          units = "m";
+        }
+        if (units === "ml") {
+          convert = (value) => {
+            return milesToMeters(value);
+          };
+          units = "m";
+        }
+
+        return mergeObject(movement, {
+          burrow: convert(movement.burrow),
+          climb: convert(movement.climb),
+          fly: convert(movement.fly),
+          swim: convert(movement.swim),
+          units: units,
+          walk: convert(movement.walk),
+        });
+      },
+      senses: (senses) => {
+        return senses ? parseSenses(senses) : null;
+      },
+      di: (damage) => {
+        return parseDamage(damage);
+      },
+      languages: (lang) => {
+        if (lang != null) {
+          const languagesSplit = lang.split("; ");
+          let languagesFin = "";
+          let languagesTr = "";
+          languagesSplit.forEach(function (el) {
+            languagesTr = languages[el.toLowerCase()];
+            if (languagesTr != null) {
+              if (languagesFin === "") {
+                languagesFin = languagesTr;
+              } else {
+                languagesFin = languagesFin + " ; " + languagesTr;
+              }
+            }
+          });
+          return languagesFin;
+        }
+      },
+      token: (token) => {
+        mergeObject(token, {
+          dimSight: footsToMeters(token.dimSight),
+          brightSight: footsToMeters(token.brightSight),
+        });
+      },
+      race: (race) => {
+        return races[race] ? races[race] : race;
+      },
+      rarity: (r) => {
+        return rarity[r] ? rarity[r] : r;
+      },
+      raceRequirements: (requirements) => {
+        let names = requirements.split(",");
+        let translated = [];
+        names
+          .map((name) => name.trim())
+          .forEach((name) => {
+            translated.push(races[name] ? races[name] : name);
+          });
+        return translated.join(", ");
+      },
+      classRequirements: (requirements) => {
+        let names = requirements.split(",");
+        let translated = [];
+        names
+          .map((name) => name.trim())
+          .forEach((name) => {
+            let keys = Object.keys(classes);
+            let translatedName = name;
+            keys.forEach((key) => {
+              translatedName = translatedName.replace(key, classes[key]);
+            });
+            translated.push(translatedName);
+          });
+        return translated.join(", ");
+      },
+      dndpages(pages, translations) {
+        return pages.map((data) => {
+          if (!translations) {
+            return data;
+          }
+
+          let translation;
+
+          if (Array.isArray(translations)) {
+            translation = translations.find(
+              (t) => t.id === data._id || t.id === data.name
+            );
+          } else {
+            translation = translations[data.name];
+          }
+
+          if (!translation) {
+            return data;
+          }
+
+          return mergeObject(data, {
+            name: translation.name,
+            image: { caption: translation.caption ?? data.image?.caption },
+            src: translation.src ?? data.src,
+            text: { content: translation.text ?? data.text?.content },
+            video: {
+              width: translation.width ?? data.video?.width,
+              height: translation.height ?? data.video?.height,
+            },
+            system: translation.system ?? data.system,
+            translated: true,
+          });
+        });
+      },
+    });
+  }
 });
 
-Hooks.once('ready', () => {
-	setEncumbranceData();
+Hooks.once("ready", () => {
+  setEncumbranceData();
 });
 
-Hooks.on('createScene', (scene) => {
-	if (convertEnabled()) {
-		scene.update({
-			"gridUnits": "m", "gridDistance": 1.5
-		});
-	}
+Hooks.on("createScene", (scene) => {
+  if (convertEnabled()) {
+    scene.update({
+      gridUnits: "m",
+      gridDistance: 1.5,
+    });
+  }
 });
 
-Hooks.on('createActor', (actor) => {
-	if (actor.getFlag("babele", "translated")) {
-		return;
-	}
-	if (convertEnabled()) {
-		actor.update({
-			token: {
-				dimSight: footsToMeters(actor.data.token.dimSight),
-				brightSight: footsToMeters(actor.data.token.brightSight)
-			},
-			data: {
-				attributes: {
-					movement: {
-						burrow: 0,
-						climb: 0,
-						fly: 0,
-						swim: 0,
-						units: 'm',
-						walk: 9
-					}
-				}
-			}
-		});
-	}
-})
-
-Hooks.on("renderActorSheet", async function () {
-	skillSorting();
+Hooks.on("createActor", (actor) => {
+  if (actor.getFlag("babele", "translated")) {
+    return;
+  }
+  if (convertEnabled()) {
+    actor.update({
+      token: {
+        dimSight: footsToMeters(actor.data.token.dimSight),
+        brightSight: footsToMeters(actor.data.token.brightSight),
+      },
+      data: {
+        attributes: {
+          movement: {
+            burrow: 0,
+            climb: 0,
+            fly: 0,
+            swim: 0,
+            units: "m",
+            walk: 9,
+          },
+        },
+      },
+    });
+  }
 });
-
-function convertEnabled() {
-	return game.settings.get("translation-dnd5e-it", "convert");
-}
-
-function setEncumbranceData() {
-	let convert = convertEnabled();
-	game.settings.set("dnd5e", "metricWeightUnits", convert);
-
-	// Fix system bug 
-	CONFIG.DND5E.encumbrance.threshold.encumbered = mergeObject(
-		CONFIG.DND5E.encumbrance.threshold.encumbered, {
-			metric: 2.5
-		}
-	);
-	CONFIG.DND5E.encumbrance.threshold.heavilyEncumbered = mergeObject(
-		CONFIG.DND5E.encumbrance.threshold.heavilyEncumbered, {
-			metric: 5
-		}
-	);
-	CONFIG.DND5E.encumbrance.threshold.maximum = mergeObject(
-		CONFIG.DND5E.encumbrance.threshold.maximum , {
-			metric: 7.5
-		}
-	);
-
-	if (convert){
-		CONFIG.DND5E.movementUnits = {			
-			m: CONFIG.DND5E.movementUnits.m,
-			km: CONFIG.DND5E.movementUnits.km,
-			ft: CONFIG.DND5E.movementUnits.ft,
-			mi: CONFIG.DND5E.movementUnits.mi
-		  };
-	}
-}
 
 async function skillSorting() {
-	const lists = document.getElementsByClassName("skills-list");
-	for (let list of lists) {
-		const competences = list.childNodes;
-		let complist = [];
-		for (let sk of competences) {
-			if (sk.innerText && sk.tagName == "LI") {
-				complist.push(sk);
-			}
-		}
-		complist.sort(function (a, b) {
-			return (a.innerText > b.innerText) ? 1 : -1;
-		});
-		for (let sk of complist) {
-			list.appendChild(sk)
-		}
-	}
-}
-
-/**
- * Utility class with all predefined converters
- */
-
-class Converters {
-
-	// Override babele page to translate tooltips
-	static pages() {
-		return (pages, translations) => Converters._pages(pages, translations);
-	}
-	static _pages(pages, translations) {
-		return pages.map(data => {
-			if (!translations) {
-				return data;
-			}
-
-			const translation = translations[data.name];
-			if (!translation) {
-				return data;
-			}
-
-			return mergeObject(data, {
-				name: translation.name,
-				image: { caption: translation.caption ?? data.image.caption },
-				src: translation.src ?? data.src,
-				text: { content: translation.text ?? data.text.content },
-				video: {
-					width: translation.width ?? data.video.width,
-					height: translation.height ?? data.video.height,
-				},
-				system: { tooltip: translation.tooltip ?? data.system.tooltip },
-				translated: true,
-			});
-		});
-	}
-
-	static weight() {
-		return (value) => Converters._weight(value);
-	}
-
-	static _weight(value) {
-		if (!convertEnabled()) {
-			return value;
-		}
-		return Converters.lbToKg(value);
-	}
-
-	static range() {
-		return (range) => Converters._range(range);
-	}
-
-	static _range(range) {
-		if (!range) {
-			return range;
-		}
-
-		if (!convertEnabled()) {
-			return range;
-		}
-		if (range.units === "ft") {
-			return mergeObject(range, {
-				"value": Converters.footsToMeters(range.value),
-				"long": Converters.footsToMeters(range.long),
-				"units": "m"
-			});
-		}
-		if (range.units === "mi") {
-			return mergeObject(range, {
-				"value": Converters.milesToMeters(range.value),
-				"long": Converters.milesToMeters(range.long),
-				"units": "km"
-			});
-		}
-		return range;
-	}
-
-	static alignment() {
-		return (alignment) => Converters._alignment(alignment);
-	}
-
-	static _alignment(alignment) {
-		return alignments[alignment.toLowerCase()];
-	}
-
-	static sightRange() {
-		return (range) => Converters._sightRange(range);
-	}
-
-	static _sightRange(range) {
-		if (!convertEnabled()) {
-			return range;
-		}
-		return Converters.footsToMeters(range)
-	}
-
-	static alignment(){
-		return (alignment) => Converters._alignment(alignment);
-	}
-
-	static _alignment(alignment) {
-		return alignments[alignment.toLowerCase()];
-	}
-
-	static movement() {
-		return (movement) => Converters._movement(movement);
-	}
-
-	static _movement(movement) {
-
-		if (!convertEnabled()) {
-			return movement;
-		}
-
-		let convert = (value) => { return value; };
-		let units = movement.units;
-		if (units === 'ft') {
-			convert = (value) => { return Converters.footsToMeters(value) };
-			units = "m";
-		}
-		if (units === 'ml') {
-			convert = (value) => { return Converters.milesToMeters(value) };
-			units = "m";
-		}
-
-		return mergeObject(movement, {
-			burrow: convert(movement.burrow),
-			climb: convert(movement.climb),
-			fly: convert(movement.fly),
-			swim: convert(movement.swim),
-			units: units,
-			walk: convert(movement.walk)
-		});
-	}
-
-	static senses() {
-		return (senses) => Converters._senses(senses);
-	}
-
-	static _senses(senses) {
-		if(!convertEnabled()) {
-			return senses;
-		}
-
-		let convert = (value) => { return value; };
-		let units = senses.units;
-		if(units === 'ft') {
-			convert = (value) => { return Converters.footsToMeters(value) };
-			units = "m";
-		}
-		if(units === 'ml') {
-			convert = (value) => { return Converters.milesToMeters(value) };
-			units = "m";
-		}
-
-		return mergeObject(senses, {
-			darkvision: convert(senses.darkvision),
-			blindsight: convert(senses.blindsight),
-			tremorsense: convert(senses.tremorsense),
-			truesight: convert(senses.truesight),
-			units: units,
-			special: convert(senses.special)
-		});
-	}
-
-	static damage() {
-		return (damage) => Converters._damage(damage);
-	}
-
-	static _damage(damage) {
-		return Converters.parseDamage(damage);
-	}
-
-	static languages() {
-		return (lang) => Converters._languages(lang);
-	}
-
-	static _languages(lang) {
-		if (lang == null) {
-			return lang;
-		}
-
-		const languagesSplit = lang.split('; ');
-		let languagesFin = '';
-		let languagesTr = '';
-		languagesSplit.forEach(function (el) {
-			languagesTr = languages[el.toLowerCase()];
-			if (languagesTr != null) {
-				if (languagesFin === '') {
-					languagesFin = languagesTr;
-				} else {
-					languagesFin = languagesFin + ' ; ' + languagesTr;
-				}
-			}
-		});
-		return languagesFin;
-	}
-
-	static token() {
-		return (token) => Converters._token(token);
-	}
-
-	static _token(token) {
-		return mergeObject(
-			token, {
-				sight: Converters.footsToMeters(token.dimSight),
-				brightSight: Converters.footsToMeters(token.brightSight)
-			}
-		);
-	}
-
-	static race() {
-		return (race) => Converters._race(race);
-	}
-
-	static _race(race) {
-		return races[race] ? races[race] : race;
-	}
-
-	static rarity() {
-		return (r) => Converters._rarity(r);
-	}
-
-	static _rarity(r) {
-		return rarity[r] ? rarity[r] : r
-	}
-
-	static raceRequirements() {
-		return (requirements) => Converters._raceRequirements(requirements);
-	}
-
-	static _raceRequirements(requirements) {
-		let names = requirements.split(',');
-		let translated = [];
-		names.map(name => name.trim()).forEach(name => {
-			translated.push(races[name] ? races[name] : name)
-		});
-		return translated.join(', ');
-	}
-
-	static classRequirements() {
-		return (requirements) => Converters._classRequirements(requirements);
-	}
-
-	static _classRequirements(requirements) {
-		let names = requirements.split(',');
-		let translated = [];
-		names.map(name => name.trim()).forEach(name => {
-			let keys = Object.keys(classes);
-			let translatedName = name;
-			keys.forEach(key => {
-				translatedName = translatedName.replace(key, classes[key])
-			});
-			translated.push(translatedName)
-		});
-		return translated.join(', ');
-	}
-
-	static source() {
-		return (source) => Converters._source(source);
-	}
-
-	static _source(source) {
-		let keys = Object.keys(source);
-		let translatedSource = source.book;
-
-		if (translatedSource) {
-			keys.forEach(key => {
-				translatedSource = translatedSource.replace(key, sources[key])
-			});
-		}
-		return mergeObject(
-			source, {
-			book: translatedSource
-		}
-		);
-	}
-
-	static type() {
-		return (type) => Converters._type(type);
-	}
-
-	static _type(type) {	
-		if (!type.subtype) {
-			return 
-		};
-
-		let index;
-		for (let key of Object.keys(races)) {
-			if (key.toLowerCase() !== type.subtype.toLowerCase()){
-				continue;
-			}
-
-			index = key;
-			break;
-		}
-
-		return mergeObject(type,
-			{
-				subtype: index ? races[index].toLowerCase() : type.subtype,				
-			}
-		);
-	}
-
-	static advsizehint() {
-		return (advancements, translation) => Converters._advsizehint(advancements, translation);
-	}
-
-	static _advsizehint(advancements, translation) {	
-		if (!translation) {
-			return advancements;
-		}
-
-		advancements.forEach(adv => {
-			if (adv.type === "Size"){
-				mergeObject(adv, {
-					configuration:{
-						hint: translation
-					}
-				});
-			}
-		});
-
-		return advancements;
-	}
-	
-	static advancement() {
-		return (advancements, translations, data, tc) => Converters._advancement(advancements, translations, data, tc);
-	}
-
-	static _advancement(advancements, translations, data, tc) {					
-		advancements.forEach(adv => {
-
-			switch (adv.type) {
-				case "HitPoints":
-					mergeObject(adv, {
-						title: game.i18n.localize("DND5E." + adv.type)
-					});
-					break;
-				case "ItemGrant":
-					mergeObject(adv, {
-						title: game.i18n.localize("DND5E." + adv.title)
-					});
-					break;
-				case "AbilityScoreImprovement":{
-					mergeObject(adv, {
-						title: game.i18n.localize("DND5E.AdvancementAbilityScoreImprovementTitle")
-					});
-					break;
-				}
-				case "ScaleValue":
-				case "ItemChoice":
-				case "Trait":
-					const classFeaturesTranslations = game.babele.translations.find((item) => item.collection === "dnd5e.classfeatures");
-					if (adv.title !== "") {						
-						if (classFeaturesTranslations.entries[adv.title]) {
-							mergeObject(adv, {
-								title: classFeaturesTranslations.entries[adv.title].name
-							});		
-						}
-						else {
-							console.warn(`Can't find "${adv.title}" translation`);
-						}
-					}
-
-					if(adv.configuration && adv.configuration.hint && adv.configuration.hint !== ""){
-						if (classFeaturesTranslations.entries[adv.configuration.hint]) {
-							mergeObject(adv, {
-								configuration:{
-									hint: classFeaturesTranslations.entries[adv.configuration.hint].hint
-								}								
-							});
-						}
-						else {
-							console.warn(`Can't find hint "${adv.configuration.hint}" translation`);
-						}
-					}
-					break;
-				default:
-					break;
-			}
-			
-		});
-
-		return advancements;
-	}
-	
-	static round(num) {
-		return Math.round((num + Number.EPSILON) * 100) / 100;
-	}
-
-	static lbToKg(lb) {
-		if (!lb) {
-			return lb;
-		}
-		return parseInt(lb) / 2;
-	}
-
-	static footsToMeters(ft) {
-		if (!ft) {
-			return ft;
-		}
-		return Converters.round(parseInt(ft) * 0.3);
-	}
-
-	static milesToMeters(mi) {
-		if (!mi) {
-			return mi;
-		}
-		return Converters.round(parseInt(mi) * 1.5);
-	}
-
-	static parseDamage(damage) {
-    damage = damage.replace(/bludgeoning/gi, "contundenti");
-    damage = damage.replace(/piercing/gi, "perforanti");
-    damage = damage.replace(/and/gi, "e");
-    damage = damage.replace(/slashing/gi, "taglienti");
-    damage = damage.replace(/from/gi, "da");
-    damage = damage.replace(/nonmagical attacks/gi, "attacchi non magici");
-    damage = damage.replace(/that aren't silvered/gi, "che non sono d'argento");
-    damage = damage.replace(
-      /not made with silvered weapons/gi,
-      "non fatti con armi d'argento"
-    );
-    return damage;
-	}
-
-  static parseSenses(sensesText) {
-    const senses = sensesText.split(". ");
-    let parsed = "";
-    senses.forEach((sense) => {
-      parsed = parseSense(sense) + " " + parsed;
+  const lists = document.getElementsByClassName("skills-list");
+  for (let list of lists) {
+    const competences = list.childNodes;
+    let complist = [];
+    for (let sk of competences) {
+      if (sk.innerText && sk.tagName == "LI") {
+        complist.push(sk);
+      }
+    }
+    complist.sort(function (a, b) {
+      return a.innerText > b.innerText ? 1 : -1;
     });
-    return parsed;
-  }
-  
-  static parseSense(sense) {
-    var regexp = /([0-9]+)/gi;
-    sense = sense.replace(/ft/gi, "m");
-    sense = sense.replace(/feet/gi, "m");
-    sense = sense.replace(/Darkvision/gi, "Scurovisione");
-    sense = sense.replace(/Darvision/gi, "Scurovisione"); //bug ^^
-    sense = sense.replace(/Blindsight/gi, "Vista cieca");
-    sense = sense.replace(/Truesight/gi, "Visione del Vero");
-    sense = sense.replace(/tremorsense/gi, "Percezione tellurica");
-    sense = sense.replace(/Blind Beyond/gi, "Cieco oltre");
-    sense = sense.replace(/this radius/gi, "questo raggio");
-    sense = sense.replace(
-      sense.match(regexp),
-      footsToMeters(sense.match(regexp))
-    );
-    sense = sense.replace(
-      "(blind beyond this radius)",
-      "(cieco oltre questo raggio)"
-    );
-    return sense;
+    for (let sk of complist) {
+      list.appendChild(sk);
+    }
   }
 }
+
+Hooks.on("renderActorSheet", async function () {
+  skillSorting();
+});
