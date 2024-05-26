@@ -413,40 +413,31 @@ Hooks.once("init", () => {
           });
         return translated.join(", ");
       },
-      dndpages(pages, translations) {
-        return pages.map((data) => {
+      pages(pages, translations) {
+        return pages.map(data => {
           if (!translations) {
             return data;
           }
-
-          let translation;
-
-          if (Array.isArray(translations)) {
-            translation = translations.find(
-              (t) => t.id === data._id || t.id === data.name
-            );
-          } else {
-            translation = translations[data.name];
-          }
-
+    
+          const translation = translations[data.name];
           if (!translation) {
             return data;
           }
-
+    
           return mergeObject(data, {
             name: translation.name,
-            image: { caption: translation.caption ?? data.image?.caption },
+            image: { caption: translation.caption ?? data.image.caption },
             src: translation.src ?? data.src,
-            text: { content: translation.text ?? data.text?.content },
+            text: { content: translation.text ?? data.text.content },
             video: {
-              width: translation.width ?? data.video?.width,
-              height: translation.height ?? data.video?.height,
+              width: translation.width ?? data.video.width,
+              height: translation.height ?? data.video.height,
             },
-            system: translation.system ?? data.system,
+            system: { tooltip: translation.tooltip ?? data.system.tooltip },
             translated: true,
           });
         });
-      },
+      }
     });
   }
 });
