@@ -1,9 +1,9 @@
 {
   "id": "translation-dnd5e-it",
-  "title": "DnD5e Italian Translation",
-  "description": "Traduzione italiana per il sistema DnD5e",
+  "title": "DnD5e Italian Translation (Fork)",
+  "description": "Fork della traduzione italiana per il sistema DnD5e",
 
-  "version": "2.0.0",
+  "version": "0.0.1",
   "compatibility": {
     "minimum": 10,
     "verified": 12
