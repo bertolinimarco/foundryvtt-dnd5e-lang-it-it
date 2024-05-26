@@ -2031,8 +2031,8 @@
   "SETTINGS.5eAutoSpellTemplateL": "Quando viene lanciato un incantesimo, imposta automaticamente il processo per creare il corrispondente Modello Misurato, se presente (richiede un ruolo di giocatore TRUSTED o superiore)",
   "SETTINGS.5eAutoSpellTemplateN": "Posiziona sempre il Modello dell'Incantesimo",
   "SETTINGS.5eChallengeVisibility": {
-    "Name": "Visibilità della Sfida",
-    "Hint": "Controlla quali DC di tiro sono visibili ai giocatori e se i successi/fallimenti sono evidenziati.",
+    "Name": "Visibilità della CD",
+    "Hint": "Controlla quali CD di tiro sono visibili ai giocatori e se i successi/fallimenti sono evidenziati.",
     "All": "Mostra tutto",
     "None": "Nascondi tutto",
     "Player": "Mostra solo dagli altri giocatori"
